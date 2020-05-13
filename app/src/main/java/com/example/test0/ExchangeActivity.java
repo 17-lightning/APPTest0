@@ -9,6 +9,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.os.PersistableBundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -36,6 +40,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -62,79 +67,79 @@ public class ExchangeActivity extends AppCompatActivity {
     private Button buttonupdate;
 
     //变量
-    private String goal;
-    private Text text = new Text();
-    private Text texto = new Text();
-    private String ip;
-    private String id;
-    private int lv;
-    private String input;
-    private String output;
-    private String exmsg;
-    private String attenntionmsg;
-    private String namematch = "null";
-    private Double numbermatch = 0.0;
+    private String goal;//可输入的货物名称，不保证匹配
+    private Text text = new Text();//可视情况删除
+    private Text texto = new Text();//弃案，视情况删除
+    private String ip;//IP地址
+    private String id;//用户账号
+    private int lv;//用户权限等级
+    private String input;//进货文本框的输入内容
+    private String output;//出货文本框的输入内容
+    private String exmsg;//进出货的信息
+    private String attenntionmsg;//警告信息
+    private String namematch = "null";//匹配的货物名称
+    private Double numbermatch = 0.0;//匹配的货物数量
+    private StringBuffer sb = null;//可拼接字符串，在输出所有日志并退出时用到，目前搁置
+    public boolean endFlag = false;
 
     //数据库器件
-    private StorageHelper storageHelper = null;
-    private SQLiteDatabase db = null;
-    Cursor cursor = null;
-    SimpleDateFormat simpleDateFormat = null;
+    private StorageHelper storageHelper = null;//数据库打开器
+    private SQLiteDatabase db = null;//数据库本身
+    Cursor cursor = null;//遍历器
+    SimpleDateFormat simpleDateFormat = null;//时间结构
 
-    //下拉框器件
-    private PopupWindow pop;
+    //下拉框器件1，输入下拉框
+    private PopupWindow pop;//弹出窗口
     private DropdownAdapter adapter;//适配器
     private View layout;//布局文件
     private List<String> list = new ArrayList<String>();
-    //下拉框器件2（其实是弹出窗口）
+    //下拉框器件2，确认窗口
     private PopupWindow pop2;
     private ConfirmAdapter adapter2 = null;
     private View viewant;
-
+    //搁置
     public Boolean confirmFLag = false;
     public Boolean confirmCorrectFlag = false;
     //弹出窗口3（警告窗口）
     private PopupWindow pop3;
     private AttentionAdapter adapter3 = null;
-
-
-
-
+    //多线程相应器
+    private Looper looper;
+    private myHandler myHandler;
+    //主线程
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //通用开头
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_exchange);
 
+        //创建Looper
+        looper = Looper.myLooper();
         //从上一个页面中得知ip、id和lv信息
         Intent intentme = getIntent();
         lv = intentme.getIntExtra("level",0);
         id = intentme.getStringExtra("id");
         ip = intentme.getStringExtra("ip");
-
         //创建数据库连接
         storageHelper = new StorageHelper(ExchangeActivity.this);
         db = storageHelper.getWritableDatabase();
-        db.execSQL("create table if not exists store(name String,number double,tag String,note String,location String,picture String,time String)");
         simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH:mm");
-
         //做弹出窗口准备
         adapter = new DropdownAdapter(ExchangeActivity.this, list);//创建一个适配器
         final ListView listView = new ListView(ExchangeActivity.this);//创建列表窗口
         listView.setAdapter(adapter);//将适配器装入列表窗口中
         layout = findViewById(R.id.viewon);
         //2
-
+        adapter2 = new ConfirmAdapter(ExchangeActivity.this,exmsg);
+        final ListView listView2 = new ListView(ExchangeActivity.this);//创建列表窗口
+        listView2.setAdapter(adapter2);
+        viewant = findViewById(R.id.viewant);
         //3
         adapter3 = new AttentionAdapter(ExchangeActivity.this,attenntionmsg);
         final ListView listView3 = new ListView(ExchangeActivity.this);//创建列表窗口
         listView3.setAdapter(adapter3);
-        //
-        adapter2 = new ConfirmAdapter(ExchangeActivity.this,exmsg,listView3);
-        final ListView listView2 = new ListView(ExchangeActivity.this);//创建列表窗口
-        listView2.setAdapter(adapter2);
-        viewant = findViewById(R.id.viewant);
-
-
+        //创建Handler，接下来程序可能需要在这里做改进
+        myHandler = new myHandler(looper,listView3);
         //名片中元件匹配
         txtitle = findViewById(R.id.textView3);
         txLastUpdate = findViewById(R.id.textView6);
@@ -142,10 +147,11 @@ public class ExchangeActivity extends AppCompatActivity {
         txLocation = findViewById(R.id.textView7);
         txNumber = findViewById(R.id.textView5);
         txNote = findViewById(R.id.textView8);
-
         //初始化
         goal = "";
         ChangeList(list);
+        sb = new StringBuffer();
+        new Thread(new SumConnect(text)).start();
 
         //可编辑文本框，这个文本框是用来输入目标名称的
         etgoal = findViewById(R.id.editText);
@@ -159,58 +165,31 @@ public class ExchangeActivity extends AppCompatActivity {
                 //每次可编辑文本框中的内容变化，就更新list列表中的数据
                 goal = editable.toString();System.out.println("需要查询的货物是:"+goal);
                 ChangeList(list);
-                int i = 0;
-                System.out.println(list.size());
-                adapter.notifyDataSetChanged();
+
             }
         });
+
         //更新按键，功能是按下时创建网络连接，更新整个数据库
         buttonUpdate = findViewById(R.id.buttonUpdate);
         buttonUpdate.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
-                text = new Text();
-                Thread t = new Thread(new Updateconnect("ALL",text));t.start();
-                try{
-                    Thread.sleep(1000);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
-                if(text.flag == true){
-                    new Thread(new PutinStore(text.s,db)).start();
-                }
-                else{
-                    Toast.makeText(ExchangeActivity.this,"连接失败，请检查网络情况",Toast.LENGTH_SHORT).show();
-                }
-
+                text.s = "updatequery#ALL";
+                text.flag = true;
             }
         });
-
+        //小更新按键，只更新当前货物信息
         buttonupdate = findViewById(R.id.button);
         buttonupdate.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
-                text = new Text();
                 if(namematch.equals("null")){
                     attenntionmsg = "请选择需要更新信息的货物";
                     attentionshow(listView3);
                     return;
                 }
-                Thread t = new Thread(new Updateconnect(namematch,text));t.start();
-                try{
-                    Thread.sleep(1000);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
-                if(text.flag == true){
-                    new Thread(new PutinStore(text.s,db)).start();
-                    ChangeList(list);
-                }
-                else{
-                    Toast.makeText(ExchangeActivity.this,"连接失败，请检查网络情况",Toast.LENGTH_SHORT).show();
-                }
-
+                text.s = "updatequery#"+namematch;
+                text.flag = true;
             }
         });
-
 
         //展开下拉列表用的按键
         imgbtnfm = findViewById(R.id.fm);
@@ -264,15 +243,9 @@ public class ExchangeActivity extends AppCompatActivity {
         btnpic = findViewById(R.id.imgbtn);
         btnpic.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
-                text.flag = false;
-                new Thread(new PictureConnect(text)).start();
-                try{
-                    Thread.sleep(1000);
-                    if(text.flag==false) Toast.makeText(ExchangeActivity.this,"连接失败，请检查网络情况",Toast.LENGTH_SHORT).show();
-                    ChangeList(list);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
+                text.s = "picturequery#"+namematch;
+                text.flag2 = true;
+                text.flag = true;
             }
         });
 
@@ -283,6 +256,11 @@ public class ExchangeActivity extends AppCompatActivity {
                 if(namematch.equals("null")){
                     attenntionmsg = "请选择要进的货物";
                     attentionshow(listView3);
+                }
+                if(lv<2){
+                    myHandler.removeMessages(0);
+                    Message message = myHandler.obtainMessage(10005,0,0,"null");
+                    myHandler.sendMessage(message);
                 }
                 try{
                     Double temp = Double.valueOf(input);
@@ -311,9 +289,12 @@ public class ExchangeActivity extends AppCompatActivity {
                     attentionshow(listView3);
                     return;
                 }
+                if(lv<2){
+                    myHandler.removeMessages(0);
+                    Message message = myHandler.obtainMessage(10005,0,0,"null");
+                    myHandler.sendMessage(message);
+                }
                 try{
-                    etinput.setText("");
-                    input = "";
                     Double temp = Double.valueOf(output);
                     if(numbermatch<Double.valueOf(output)){
                         attenntionmsg = "库存不能为负数";
@@ -346,12 +327,14 @@ public class ExchangeActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        }//主线程方法结束，以下是其他方法
 
+    protected void onDestroy(){
+        super.onDestroy();
+        endFlag = true;
+    }
 
-
-
-        }
-        //更新list中的数据，如果发现匹配，则更新名片
+    //更新list中的数据，如果发现匹配，则更新名片，并设置namematch和numbermatch
         public void ChangeList(List<String> list){
             list.removeAll(list);
             cursor = db.rawQuery("select * from store where name like '%"+goal+"%'",null);
@@ -372,8 +355,9 @@ public class ExchangeActivity extends AppCompatActivity {
                 }
                 list.add(cursor.getString(0));
             }
+            adapter.notifyDataSetChanged();
         }
-
+        //展示警告窗口
         public void attentionshow(ListView listView){
             if(pop3 == null){
                 pop3 = new PopupWindow(listView,viewant.getWidth(),viewant.getHeight());
@@ -384,7 +368,7 @@ public class ExchangeActivity extends AppCompatActivity {
             }
         }
 
-
+        //类：下拉框对应的适配器
     class DropdownAdapter extends BaseAdapter {
         private Context context;
         private LayoutInflater layoutInflater;
@@ -414,7 +398,7 @@ public class ExchangeActivity extends AppCompatActivity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             layoutInflater = LayoutInflater.from(context);//创建一个布局解析器
             convertView = layoutInflater.inflate(R.layout.list_row, null);//将布局转化成View窗口
-            convertView.setAlpha(1);
+            convertView.setAlpha(1);//不透明！
             close = (ImageButton)convertView.findViewById(R.id.close_row);//其中的按钮与元件对应关系
             content = (TextView)convertView.findViewById(R.id.text_row);
             final String editContent = list.get(position);//根据位置，从列表中获取对应的元素
@@ -437,7 +421,7 @@ public class ExchangeActivity extends AppCompatActivity {
             return convertView;
         }
     }
-
+    //类：确认窗口对应的适配器
     class ConfirmAdapter extends BaseAdapter {
         private Context context;
         private LayoutInflater layoutInflater;
@@ -445,11 +429,10 @@ public class ExchangeActivity extends AppCompatActivity {
         private TextView content;
         private Button btny;
         private Button btnn;
-        public ListView listView;
 
         //构造方法，用于获取当前context背景和列表
-        public ConfirmAdapter(Context context,String str,ListView listView) {
-            this.context = context;this.str = str;this.listView = listView;
+        public ConfirmAdapter(Context context,String str) {
+            this.context = context;this.str = str;
         }
 
         //获取长度
@@ -479,27 +462,15 @@ public class ExchangeActivity extends AppCompatActivity {
             });
             btny.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    text.flag = false;
-                    new Thread(new exchangeConnect(exmsg,text,listView)).start();
-                    try{
-                        Thread.sleep(1000);
-                    }catch(Exception e){
-                        e.printStackTrace();
-                    }
-                    if(exmsg.split("#")[0].equals("input")){
-                        db.execSQL("update store set number = "+(numbermatch+Double.valueOf(exmsg.split("#")[1]))+" where name = '"+namematch+"'");
-                    }else{
-                        db.execSQL("update store set number = "+(numbermatch-Double.valueOf(exmsg.split("#")[1]))+" where name = '"+namematch+"'");
-                    }
                     pop2.dismiss();
-                    ChangeList(list);
-
+                    text.s = "exchange#"+namematch+"#"+exmsg+"#"+numbermatch+"#"+id;
+                    text.flag = true;
                 }
             });
             return convertView;
         }
     }
-
+    //类：警告窗口
     class AttentionAdapter extends BaseAdapter {
         private Context context;
         private LayoutInflater layoutInflater;
@@ -541,108 +512,129 @@ public class ExchangeActivity extends AppCompatActivity {
         }
     }
 
-    class Updateconnect extends Thread{
-        String goal = null;
-        Socket socket;
+
+    //总的网络连接线程，所有网络连接操作在此线程中进行
+    class SumConnect extends Thread{
+
+        Socket socket = null;
         Text t = null;
 
-        Updateconnect(String goal,Text t){
-            this.goal = goal;this.t = t;
-        }
+        public SumConnect(Text t){this.t = t;}
 
         public void run(){
             try{
-                socket = new Socket(ip,12000);
-                PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-                pwr.println("updatequery#"+goal);
-                pwr.flush();
-                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                t.s = br.readLine();
-                t.flag = true;
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-    }
-
-    class exchangeConnect extends Thread{
-        String str = null;
-        Socket socket;
-        Text t = null;
-        ListView listView;
-        public exchangeConnect(String str,Text t,ListView listView) {
-            this.str = str;this.t = t;this.listView = listView;
-        }
-        public void run(){
-            try{
-                socket = new Socket(ip,12000);
-                PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                pwr.println("exchange#"+namematch+"#"+str+"#"+numbermatch);
-                pwr.flush();
-                t.s = br.readLine();
-                System.out.println("从服务器端收到的信息是"+t.s);
-                if(t.s.equals("error")) {
-                    attenntionmsg = "操作失败\n这可能是网络状况不佳或者没有及时更新货物信息引起的";
-                    attentionshow(listView);
-                }
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-    }
-
-    class PictureConnect extends Thread{
-        Socket socket;
-        Text t = null;
-
-        PictureConnect(Text t){
-            this.t = t;
-        }
-
-        public void run(){
-            try{
-                System.out.println("开始获取图片");
-                if(namematch.equals("null")) return;
-                Cursor cursortemp = db.rawQuery("select * from team where name = '"+namematch+"'",null);
-                while(cursortemp.moveToNext()){
-                    if(cursortemp.getString(5).equals("null")){
-                        db.execSQL("update store set picture = '" + namematch + ".jpg' where name = '" + namematch + "'");
-                        File file = new File(ExchangeActivity.this.getFilesDir(),namematch+".jpg");
+                Text t0 = new Text();//t0是为了判断网络延时而设置的参照物
+                t0.flag = false;//设置t0为false
+                Thread.sleep(1000);
+                System.out.println("启动延时器");
+                new Thread(new DelayTimer(t0)).start();//启动延时器，若1s后连接没有建立，认为发生了网络延时，弹出警告框
+                socket = new Socket(ip,12000);//建立Socket连接
+                PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));//创建输出流
+                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));//创建文本输入流
+                DataInputStream dis = new DataInputStream(socket.getInputStream());//创建图片输入流
+                t0.flag = true;
+                System.out.println("网络连接建立成功");
+                while(endFlag == false){
+                    //进行一次网络检查
+                    Thread.sleep(500);//每500ms判断一次是否需要网络输出，如果有输出的信号，则发送这行信息并接收服务器端的一行信息
+                    if(t.flag == true){//t.flag = true说明有需要发送的信号
+                        System.out.println("检测到有需要输出的消息");
+                        t.flag = false;//标记发送信号已收到
+                        System.out.println("清除发送信号");
+                        pw.println(t.s);//发送
+                        pw.flush();
+                        System.out.println("发送数据："+t.s);
+                        if(t.flag2 == true){//flag2是用来标记图片输入的，服务器端返回的信息应当是图片而不是语句时，调用以下代码
+                            t.flag2 = false;
+                            System.out.println("接收到图片输入："+namematch+".jpg");
+                            Cursor cursortemp = db.rawQuery("select * from team where name = '"+namematch+"'",null);
+                            while(cursortemp.moveToNext()){
+                                if(cursortemp.getString(5).equals("null")){//如果原本不存在这张图片，则创建该文件
+                                    db.execSQL("update store set picture = '" + namematch + ".jpg' where name = '" + namematch + "'");
+                                    File file = new File(ExchangeActivity.this.getFilesDir(),namematch+".jpg");
+                                }
+                            }
+                            OutputStream os = openFileOutput(namematch+".jpg",Context.MODE_PRIVATE);//创建一个图片输出流
+                            System.out.println("成功创建图片输出流："+namematch+".jpg");
+                            byte[] temp = new byte[1024];//创建byte数组用于读取信息
+                            int len = -1;
+                            while((len = dis.read(temp))!=-1){
+                                os.write(temp,0,len);//将信息写入文件
+                            }
+                            os.flush();//刷新并关闭文件流
+                            os.close();
+                            System.out.println("刷新并关闭文件"+namematch+".jpg");
+                            myHandler.removeMessages(0);
+                            Message message = myHandler.obtainMessage(10004,0,0,"null");
+                            myHandler.sendMessage(message);
+                            //虽然我也不知道为什么，但是在dis.read方法后，这个连接会被关闭，咱也不知道，咱也搞不懂，所以只能开辟一个新连接了
+                            //可能是因为每4字节一读但是图片大小不会正好是4的整数倍，所以连接出现异常关闭，但反正关了这个连接重开一个就是了
+                            new Thread(new SumConnect(t)).start();
+                            System.out.println("图片交流完毕，关闭本线程并开启新线程");
+                            return;
+                        }else{//服务器端返回的信息不是图片而是语句时，调用以下代码
+                            String str = br.readLine();
+                            System.out.println("接收到输入信息："+str);
+                            if(str.contains("&")) new Thread(new PutinStore(str,db)).start();
+                            else if(str.equals("exchange#error")){
+                                myHandler.removeMessages(0);
+                                Message message = myHandler.obtainMessage(10000,0,0,"null");
+                                myHandler.sendMessage(message);
+                            }else if(str.equals("exchange#over")){
+                                myHandler.removeMessages(0);
+                                Message message = myHandler.obtainMessage(10001,0,0,"null");
+                                myHandler.sendMessage(message);
+                                if(exmsg.split("#")[0].equals("input")){
+                                    db.execSQL("update store set number = "+(numbermatch+Double.valueOf(exmsg.split("#")[1]))+" where name = '"+namematch+"'");
+                                    sb.append(namematch+"+"+exmsg.split("#")[1]);
+                                    myHandler.removeMessages(0);
+                                    Message message2 = myHandler.obtainMessage(10004,0,0,"null");
+                                    myHandler.sendMessage(message2);
+                                }else{
+                                    db.execSQL("update store set number = "+(numbermatch-Double.valueOf(exmsg.split("#")[1]))+" where name = '"+namematch+"'");
+                                    sb.append(namematch+"-"+exmsg.split("#")[1]);
+                                    myHandler.removeMessages(0);
+                                    Message message2 = myHandler.obtainMessage(10004,0,0,"null");
+                                    myHandler.sendMessage(message2);
+                                }
+                            }
+                        }
+                    }else{
+                        //没有需要输出的信息，开始下一次循环
                     }
+
                 }
-                db.execSQL("update store set picture = '" + namematch + ".jpg' where name = '" + namematch + "'");
-                socket = new Socket(ip,12000);
-                PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-                pwr.println("picturequery#"+namematch);
-                pwr.flush();
-                DataInputStream dis = new DataInputStream(socket.getInputStream());
-                OutputStream os = openFileOutput(namematch+".jpg",Context.MODE_PRIVATE);
-                byte[] temp = new byte[1024];
-                int len = -1;
-                while((len = dis.read(temp))!=-1){
-                    os.write(temp,0,len);
-                }
-                os.flush();
-                os.close();
-                dis.close();
-                t.flag = true;
             }catch(Exception e){
                 e.printStackTrace();
+                System.out.println("连接中断");
+                myHandler.removeMessages(0);
+                Message message = myHandler.obtainMessage(10004,0,0,"null");
+                myHandler.sendMessage(message);
+            }
+            System.out.println("终止所有相关线程");
+        }
+    }
+//延迟计时器，用于判断网络连接超时错误
+    class DelayTimer extends Thread{
+        Text t = null;
+        public DelayTimer(Text t){this.t = t;}
+
+        @Override
+        public void run() {
+            try{
+                Thread.sleep(1000);
+            }catch(Exception e){
+            }
+            if(t.flag == false){
+                myHandler.removeMessages(0);
+                Message message = myHandler.obtainMessage(10003,0,0,"null");
+                myHandler.sendMessage(message);
             }
         }
     }
 
-    class BianliStorage extends Thread{
-        public void run(){
-            cursor = db.rawQuery("select * from store",null);
-            while(cursor.moveToNext()){
-                System.out.println(cursor.getString(0));
-            }
-        }
 
-    }
-
+//更新数据库用方法
     class PutinStore extends Thread{
 
         String temp = null;
@@ -675,15 +667,57 @@ public class ExchangeActivity extends AppCompatActivity {
                     db.execSQL("update store set time = '" + simpleDateFormat.format(new Date()) + "' where name = '" + name + "'");
                     i++;
                     System.out.println("insert into store values('"+name+"','"+Double.valueOf(temp.split("#")[1])+"','"+temp.split("#")[2]+"','"+temp.split("#")[3]+"','"+temp.split("#")[4]+"','null','"+simpleDateFormat.format(new Date())+"')");
-                    temp = text.s.split("&")[i];
+                    temp = this.temp.split("&")[i];
 
                 }else{
                     db.execSQL("insert into store values('"+name+"','"+Double.valueOf(temp.split("#")[1])+"','"+temp.split("#")[2]+"','"+temp.split("#")[3]+"','"+temp.split("#")[4]+"','null','"+simpleDateFormat.format(new Date())+"')");
                     System.out.println("insert into store values('"+name+"','"+Double.valueOf(temp.split("#")[1])+"','"+temp.split("#")[2]+"','"+temp.split("#")[3]+"','"+temp.split("#")[4]+"','null','"+simpleDateFormat.format(new Date())+"')");
                 }
             }
-
+            ChangeList(list);
         }
+    }
+//处理器，用于线程交互
+    public class myHandler extends Handler{
+
+        public ListView listView;
+
+        public myHandler(Looper looper,ListView listView){
+            super(looper);this.listView = listView;
+        }
+
+        public void handleMessage(Message message){
+            switch (message.what){
+                //弹出进出货失败警告框
+                case 10000:
+                    System.out.println("检测到进出货失败");
+                    attenntionmsg = "操作失败\n请及时更新货物信息";
+                    attentionshow(listView);
+                    break;
+                //弹出进出货成功警告框
+                case 10001:
+                    System.out.println("检测到进出货成功");
+                    attenntionmsg = "操作成功\n";
+                    attentionshow(listView);
+                    break;
+                case 10002:
+                    attenntionmsg = "操作失败\n网络连接出现异常";
+                    attentionshow(listView);
+                    break;
+                case 10003:
+                    attenntionmsg = "网络连接超时\n请尝试退出页面重进";
+                    attentionshow(listView);
+                    break;
+                case 10004:
+                    ChangeList(list);
+                    break;
+                case 10005:
+                    attenntionmsg = "您的权限不够\n不能对库存进行操作";
+                    attentionshow(listView);
+                    break;
+            }
+        }
+
     }
 
 

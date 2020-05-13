@@ -28,6 +28,7 @@ public class Main2Activity extends AppCompatActivity {
 
 
         Intent intentme = getIntent();
+        System.out.println(intentme.getStringExtra("level"));
         lv = intentme.getIntExtra("level",0);
         id = intentme.getStringExtra("id");
         ip = intentme.getStringExtra("ip");

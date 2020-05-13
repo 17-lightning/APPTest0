@@ -11,35 +11,64 @@
         android:textSize="20dp"
         android:textColor="#0066FF"/>
 
+    <TextView
+        android:id="@+id/tx2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tx1"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="10dp"
+        android:text="服务器ip地址："/>
+
     <EditText
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:id="@+id/et0"
-        android:layout_below="@id/tx1"
+        android:layout_below="@id/tx2"
         android:textSize="16sp"
         android:textColor="#0066FF"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:hint="请输入服务器ip地址（测试版功能）"
         android:background="@drawable/huisemiaobian"
-        android:layout_margin="10dp"
         android:paddingLeft="10dp"
         android:drawableLeft="@drawable/tishi"
         android:drawablePadding="5dp"
         android:maxLines="1"/>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/et0"
+        android:text="账号:"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
+        android:id="@+id/tx3"/>
+
     <EditText
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:id="@+id/et1"
-        android:layout_below="@id/et0"
+        android:layout_below="@id/tx3"
         android:textSize="16sp"
         android:textColor="#0066FF"
         android:hint="请输入账号"
         android:background="@drawable/huisemiaobian"
-        android:layout_margin="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:paddingLeft="10dp"
         android:drawableLeft="@drawable/tishi"
         android:drawablePadding="5dp"
         android:maxLines="1"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tx4"
+        android:layout_below="@+id/et1"
+        android:text="密码："
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"/>
 
     <EditText
         android:layout_width="match_parent"
@@ -49,10 +78,10 @@
         android:textColor="#0066FF"
         android:inputType="textPassword"
         android:hint="请输入密码"
-        android:layout_below="@id/et1"
-        android:layout_marginTop="15dp"
+        android:layout_below="@id/tx4"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:background="@drawable/huisemiaobian"
-        android:layout_margin="10dp"
         android:paddingLeft="10dp"
         android:drawableLeft="@drawable/tishi"
         android:drawablePadding="5dp"
@@ -62,7 +91,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="登录"
-        android:layout_margin="10dp"
+        android:layout_margin="20dp"
         android:layout_below="@id/et2"
         android:background="@drawable/tishianniu"
         android:textColor="#FFFFFF"

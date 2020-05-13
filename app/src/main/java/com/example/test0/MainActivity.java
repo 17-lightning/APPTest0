@@ -3,7 +3,11 @@ package com.example.test0;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -11,6 +15,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -27,6 +32,12 @@ public class MainActivity extends AppCompatActivity {
     private EditText etip;
     private EditText etid;
     private EditText etpw;
+    private TextView txip;
+    private TextView txid;
+    private TextView txpw;
+
+    private boolean idRed = false;
+    private boolean pwRed = false;
 
     private Button buttontest;
 
@@ -34,12 +45,21 @@ public class MainActivity extends AppCompatActivity {
     String id = null;String pw = null;
     Text text = new Text();
 
+    Looper looper = null;
+    ConnectHandler handler = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        text.flag = false;
+        looper = Looper.myLooper();
+        handler = new ConnectHandler(looper);
+
+        txip = findViewById(R.id.tx2);
+        txid = findViewById(R.id.tx3);
+        txpw = findViewById(R.id.tx4);
+
         //对应ip地址的可编辑文本框相关代码
         etip = findViewById(R.id.et0);
         etip.addTextChangedListener(new TextWatcher() {
@@ -47,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2){}
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                Log.d("edittext: ", charSequence.toString());
             }
             @Override
             public void afterTextChanged(Editable editable) {
@@ -62,7 +81,12 @@ public class MainActivity extends AppCompatActivity {
             @Override//在文本改变之前
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2){}
             @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(idRed){
+                    txid.setTextColor(Color.rgb(128,128,128));
+                    txid.setText("账号：");
+                }
+            }
             @Override
             public void afterTextChanged(Editable editable) {
                 id = editable.toString();System.out.println("输入的账号是"+id);
@@ -75,7 +99,12 @@ public class MainActivity extends AppCompatActivity {
             @Override//在文本改变之前
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2){}
             @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(pwRed){
+                    txpw.setTextColor(Color.rgb(128,128,128));
+                    txpw.setText("账号：");
+                }
+            }
             @Override
             public void afterTextChanged(Editable editable) {
                 pw = editable.toString();System.out.println("输入的密码是"+pw);
@@ -88,17 +117,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 btnlg.setText("登录中");etid.setBackgroundResource(R.drawable.huisemiaobian);etpw.setBackgroundResource(R.drawable.huisemiaobian);
-                Thread t = new Loginconnect(ip,id,pw,text);t.start();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                Thread t = new Loginconnect(ip,id,pw,text,handler);t.start();
                 }
-                if(text.flag == false) {Toast.makeText(MainActivity.this,"连接超时，请检查网络状况或ip地址",Toast.LENGTH_LONG).show();btnlg.setText("登录");}
-                else if(text.s.equals("loginfail#idWrong")) {text.flag = false;Toast.makeText(MainActivity.this,"找不到该账号",Toast.LENGTH_LONG).show();btnlg.setText("登录");etid.setBackgroundResource(R.drawable.hongsemiaobian);text.s=null;}
-                else if(text.s.equals("loginfail#passwordWrong")) {text.flag = false;Toast.makeText(MainActivity.this,"密码错误，请重新输入",Toast.LENGTH_LONG).show();btnlg.setText("登录");etpw.setBackgroundResource(R.drawable.hongsemiaobian);text.s=null;}
-                else  {System.out.println(text.s);lv=Integer.valueOf(text.s.split("#")[1]);Toast.makeText(MainActivity.this,"登录成功，您的权限等级是"+lv,Toast.LENGTH_LONG).show();Intent intent = new Intent(MainActivity.this,Main2Activity.class);intent.putExtra("level",lv);intent.putExtra("id",id);intent.putExtra("ip",ip);startActivity(intent);}
-            }
         });
 
         btnrg = findViewById(R.id.btnrg);
@@ -114,34 +134,129 @@ public class MainActivity extends AppCompatActivity {
         buttontest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this,Main2Activity.class);intent.putExtra("level",100);intent.putExtra("id","testuser");intent.putExtra("ip","192.168.1.2");startActivity(intent);
+                Intent intent = new Intent(MainActivity.this,Main2Activity.class);intent.putExtra("level",100);intent.putExtra("id","testuser");intent.putExtra("ip",ip);startActivity(intent);
             }
         });
 
 
     }
-}
-//运行此类将会把账号和密码发送给对应ip地址，把返回值装入text中
-class Loginconnect extends Thread{
-    String id = null;String pw = null;
-    Socket socket;String ip = null;
-    Text t = null;
 
-    Loginconnect(String ip,String id,String pw,Text t){
-        this.ip = ip;this.id = id;this.pw = pw;this.t = t;
-    }
 
-    public void run(){
-        try{
-            socket = new Socket(ip,12000);
-            t.flag = true;
-            PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-            pwr.println("loginquery#"+id+"#"+pw);
-            pwr.flush();
-            BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            t.s = br.readLine();
-        }catch(Exception e){
-            e.printStackTrace();
+
+    class IdWrong implements Runnable{
+        public void run(){
+            etid.setBackgroundResource(R.drawable.hongsemiaobian);
+            txid.setTextColor(Color.rgb(255,0,0));
+            txid.setText("该账号不存在");
+            idRed = true;
         }
     }
+
+    class PwWrong implements Runnable{
+        public void run(){
+            etpw.setBackgroundResource(R.drawable.hongsemiaobian);
+            txpw.setTextColor(Color.rgb(255,0,0));
+            txpw.setText("密码错误");
+            pwRed = true;
+        }
+    }
+
+    class NetDelayed implements Runnable{
+        public void run(){
+            Toast.makeText(MainActivity.this,"检查到网络延迟\n可能是网络状况不佳或ip地址输入错误",Toast.LENGTH_LONG).show();
+        }
+    }
+
+    class LoginSuccess implements Runnable{
+        String id;
+        String lv;
+        public LoginSuccess(String id,String lv){
+            this.id = id;this.lv = lv;
+        }
+        public void run(){
+            Intent intent = new Intent(MainActivity.this,Main2Activity.class);
+            intent.putExtra("level",Integer.valueOf(lv));
+            intent.putExtra("id",id);
+            intent.putExtra("ip",ip);
+            startActivity(intent);
+        }
+    }
+
+    class LoginOver implements Runnable{
+        public void run(){
+            btnlg.setText("登录");
+        }
+    }
+
+
+    class ConnectHandler extends Handler{
+
+        public ConnectHandler(Looper looper){
+            super(looper);
+        }
+
+        public void handleMessage(Message message){
+            switch (message.what){
+                case 10000:
+                {
+                    System.out.println("接收到10000号指令");
+                }
+            }
+        }
+    }
+
+    //运行此类将会把账号和密码发送给对应ip地址，把返回值装入text中
+    class Loginconnect extends Thread{
+        String id = null;String pw = null;
+        Socket socket;String ip = null;
+        Text t = null;
+
+        ConnectHandler handler = null;
+
+        Loginconnect(String ip, String id, String pw, Text t, ConnectHandler handler){
+            this.ip = ip;this.id = id;this.pw = pw;this.t = t;this.handler = handler;
+        }
+
+        public void run(){
+            try{
+                t.flag = false;
+                new Thread(new DelayTimer(t,handler)).start();
+                socket = new Socket(ip,12000);
+                t.flag = true;
+                if(id.equals("")) {handler.post(new IdWrong());return;}
+                if(pw.equals("")) {handler.post(new PwWrong());return;}
+                PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
+                pwr.println("loginquery#"+id+"#"+pw);
+                pwr.flush();
+                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String str = br.readLine();
+                if(str.split("#")[0].equals("loginsuccess")) handler.post(new LoginSuccess(id,str.split("#")[1]));
+                else if(str.equals("loginfail#idWrong")) handler.post(new IdWrong());
+                else if(str.equals("loginfail#passwordWrong")) handler.post(new PwWrong());
+                handler.post(new LoginOver());
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    class DelayTimer extends Thread{
+        Text t = null;ConnectHandler handler = null;
+        public DelayTimer(Text t,ConnectHandler handler){
+            this.t = t;this.handler = handler;
+        }
+        public void run(){
+            try{
+                Thread.sleep(1000);
+                if(t.flag == false){
+                    handler.post(new NetDelayed());
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
+
+
