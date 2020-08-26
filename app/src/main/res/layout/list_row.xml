@@ -13,12 +13,12 @@
         android:alpha="1"
         android:gravity="center_horizontal|center_vertical"
         />
+
     <ImageButton
         android:id="@+id/close_row"
         android:layout_width="match_parent"
         android:layout_height="45dp"
-        android:background="@android:drawable/arrow_down_float"
         android:layout_weight="8"
         android:alpha="1"
-        />
+        android:background="@drawable/tianru" />
 </LinearLayout>

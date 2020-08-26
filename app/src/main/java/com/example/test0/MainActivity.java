@@ -221,18 +221,18 @@ public class MainActivity extends AppCompatActivity {
             try{
                 t.flag = false;
                 new Thread(new DelayTimer(t,handler)).start();
-                socket = new Socket(ip,12000);
+                socket = new Socket(ip,57798);
                 t.flag = true;
                 if(id.equals("")) {handler.post(new IdWrong());return;}
                 if(pw.equals("")) {handler.post(new PwWrong());return;}
                 PrintWriter pwr = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-                pwr.println("loginquery#"+id+"#"+pw);
+                pwr.println("login#"+id+"#"+pw);
                 pwr.flush();
                 BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String str = br.readLine();
-                if(str.split("#")[0].equals("loginsuccess")) handler.post(new LoginSuccess(id,str.split("#")[1]));
-                else if(str.equals("loginfail#idWrong")) handler.post(new IdWrong());
-                else if(str.equals("loginfail#passwordWrong")) handler.post(new PwWrong());
+                if(str.split("#")[1].equals("success")) handler.post(new LoginSuccess(id,str.split("#")[2]));
+                else if(str.equals("login#error")) handler.post(new IdWrong());
+                else if(str.equals("login#wrong")) handler.post(new PwWrong());
                 handler.post(new LoginOver());
             }catch(Exception e){
                 e.printStackTrace();

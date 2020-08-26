@@ -16,6 +16,7 @@
         <activity android:name=".QueryActivity" />
         <activity android:name=".RegisterActivity" />
         <activity android:name=".Main2Activity" />
+        <activity android:name=".ShelfActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

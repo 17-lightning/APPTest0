@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -44,6 +45,7 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 public class ExchangeActivity extends AppCompatActivity {
@@ -81,6 +83,11 @@ public class ExchangeActivity extends AppCompatActivity {
     private Double numbermatch = 0.0;//匹配的货物数量
     private StringBuffer sb = null;//可拼接字符串，在输出所有日志并退出时用到，目前搁置
     public boolean endFlag = false;
+    private String checkString = "null";
+    private HashMap<Integer,String> checkmap;
+    private int index=0;
+    private int index2=0;
+    private ListView listView0;
 
     //数据库器件
     private StorageHelper storageHelper = null;//数据库打开器
@@ -93,7 +100,7 @@ public class ExchangeActivity extends AppCompatActivity {
     private DropdownAdapter adapter;//适配器
     private View layout;//布局文件
     private List<String> list = new ArrayList<String>();
-    //下拉框器件2，确认窗口
+    //下拉框器件2，确认窗口//作废
     private PopupWindow pop2;
     private ConfirmAdapter adapter2 = null;
     private View viewant;
@@ -103,9 +110,14 @@ public class ExchangeActivity extends AppCompatActivity {
     //弹出窗口3（警告窗口）
     private PopupWindow pop3;
     private AttentionAdapter adapter3 = null;
+    //弹出窗口4（目标仓库选择窗口）
+    private PopupWindow pop4;
+    private CheckAdapter adapter4 = null;
     //多线程相应器
     private Looper looper;
     private myHandler myHandler;
+    //网络处理模块中用于反馈错误的翻译表
+    private HashMap<String,String> map;
     //主线程
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,6 +150,11 @@ public class ExchangeActivity extends AppCompatActivity {
         adapter3 = new AttentionAdapter(ExchangeActivity.this,attenntionmsg);
         final ListView listView3 = new ListView(ExchangeActivity.this);//创建列表窗口
         listView3.setAdapter(adapter3);
+        //4
+        adapter4 = new CheckAdapter(ExchangeActivity.this,checkString);
+        final ListView listView4 = new ListView(ExchangeActivity.this);
+        listView4.setAdapter(adapter4);
+        listView0=listView4;
         //创建Handler，接下来程序可能需要在这里做改进
         myHandler = new myHandler(looper,listView3);
         //名片中元件匹配
@@ -152,6 +169,7 @@ public class ExchangeActivity extends AppCompatActivity {
         ChangeList(list);
         sb = new StringBuffer();
         new Thread(new SumConnect(text)).start();
+        checkmap = new HashMap<Integer, String>();
 
         //可编辑文本框，这个文本框是用来输入目标名称的
         etgoal = findViewById(R.id.editText);
@@ -173,7 +191,7 @@ public class ExchangeActivity extends AppCompatActivity {
         buttonUpdate = findViewById(R.id.buttonUpdate);
         buttonUpdate.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
-                text.s = "updatequery#ALL";
+                text.s = "update#ALL";//############
                 text.flag = true;
             }
         });
@@ -186,7 +204,7 @@ public class ExchangeActivity extends AppCompatActivity {
                     attentionshow(listView3);
                     return;
                 }
-                text.s = "updatequery#"+namematch;
+                text.s = "update#"+namematch;//############
                 text.flag = true;
             }
         });
@@ -198,16 +216,16 @@ public class ExchangeActivity extends AppCompatActivity {
                 if(pop == null){
                     pop = new PopupWindow(listView,layout.getWidth(),3*layout.getHeight());
                     pop.showAsDropDown(layout);
-                    imgbtnfm.setBackgroundResource(R.drawable.arrow_up_float);
+                    imgbtnfm.setBackgroundResource(R.drawable.shouhui);
                 }
                 else{
                     if(pop.isShowing()){
                         pop.dismiss();
-                        imgbtnfm.setBackgroundResource(R.drawable.arrow_down_float);
+                        imgbtnfm.setBackgroundResource(R.drawable.zhankai);
                     }
                     else{
                         pop.showAsDropDown(layout);
-                        imgbtnfm.setBackgroundResource(R.drawable.arrow_up_float);
+                        imgbtnfm.setBackgroundResource(R.drawable.shouhui);
                     }
                 }
             }
@@ -243,7 +261,7 @@ public class ExchangeActivity extends AppCompatActivity {
         btnpic = findViewById(R.id.imgbtn);
         btnpic.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
-                text.s = "picturequery#"+namematch;
+                text.s = "picture#"+namematch;//############
                 text.flag2 = true;
                 text.flag = true;
             }
@@ -265,13 +283,16 @@ public class ExchangeActivity extends AppCompatActivity {
                 try{
                     Double temp = Double.valueOf(input);
                     exmsg = "input#"+input;
-                    if(pop2 == null) {
+                    //本来是直接进货，现在需要先切换到check页面
+                    text.s="check#"+namematch;
+                    text.flag=true;
+                    /*if(pop2 == null) {
                         pop2 = new PopupWindow(listView2, viewant.getWidth(), viewant.getHeight());
                         pop2.showAsDropDown(viewant);
                     }
                     else{
                         pop2.showAsDropDown(viewant);
-                    }
+                    }*/
                 }catch (Exception e){
                     e.printStackTrace();
                     attenntionmsg = "进货数量不是数字，请检查";
@@ -302,6 +323,10 @@ public class ExchangeActivity extends AppCompatActivity {
                         return;
                     }
                     exmsg = "output#"+output;
+                    //本来是直接出货，现在需要先切换到check页面
+                    text.s="check#"+namematch;
+                    text.flag=true;
+                    /*
                     if(pop2 == null) {
                         pop2 = new PopupWindow(listView2, viewant.getWidth(), viewant.getHeight());
                         pop2.showAsDropDown(viewant);
@@ -309,6 +334,7 @@ public class ExchangeActivity extends AppCompatActivity {
                     else{
                         pop2.showAsDropDown(viewant);
                     }
+                    */
                 }catch (Exception e){
                     e.printStackTrace();
                     attenntionmsg = "出货数量不是数字，请检查";
@@ -337,7 +363,12 @@ public class ExchangeActivity extends AppCompatActivity {
     //更新list中的数据，如果发现匹配，则更新名片，并设置namematch和numbermatch
         public void ChangeList(List<String> list){
             list.removeAll(list);
-            cursor = db.rawQuery("select * from store where name like '%"+goal+"%'",null);
+            if(goal == "") {
+                //如果输入框内没有文字，则显示今天最近搜索过的三个内容
+                cursor = db.rawQuery("select * from store where time like '"+simpleDateFormat.format(new Date()).substring(0,10)+"%'",null);
+            }
+            //如果输入框内有文字，则显示与文字相似的内容
+            else cursor = db.rawQuery("select * from store where name like '%"+goal+"%'",null);
             while(cursor.moveToNext()){
                 if(goal.equals(cursor.getString(0))){
                     txtitle.setText(cursor.getString(0));
@@ -351,11 +382,16 @@ public class ExchangeActivity extends AppCompatActivity {
                     System.out.println("货物"+goal+"的数量是"+cursor.getString(1)+",它的标签是"+cursor.getString(2)+",它的相关说明是"+cursor.getString(3)+",它的存储位置是"+cursor.getString(4)+",它的图片位置是"+cursor.getString(5)+",它的最后更新时间是"+cursor.getString(6));
                     if(!cursor.getString(5).equals("null")){
                         btnpic.setImageURI(Uri.fromFile(new File(ExchangeActivity.this.getFilesDir()+"/"+goal+".jpg")));
+                    }else{
+                        btnpic.setImageURI(null);
                     }
                 }
                 list.add(cursor.getString(0));
             }
-            adapter.notifyDataSetChanged();
+            myHandler.removeMessages(0);
+            Message message = myHandler.obtainMessage(1999,0,0,"null");
+            myHandler.sendMessage(message);
+            //adapter.notifyDataSetChanged();
         }
         //展示警告窗口
         public void attentionshow(ListView listView){
@@ -403,7 +439,7 @@ public class ExchangeActivity extends AppCompatActivity {
             content = (TextView)convertView.findViewById(R.id.text_row);
             final String editContent = list.get(position);//根据位置，从列表中获取对应的元素
             content.setText(list.get(position).toString());//设置文本框的内容为获取到的元素
-            //触摸时，将会把下拉列表中触摸的那个元素填入可编辑文本框中，并消灭下拉框
+            //触摸时，将会把下拉列表中触摸的那个元素填入可编辑文本框中，并消灭下拉框(已经被修改，现在仅单击触发）
             content.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     etgoal.setText(editContent);
@@ -512,6 +548,127 @@ public class ExchangeActivity extends AppCompatActivity {
         }
     }
 
+    //磊：目标仓库选择窗口
+    class CheckAdapter extends BaseAdapter {
+        private Context context;
+        private LayoutInflater layoutInflater;
+        private String str;
+        private TextView tv1;
+        private TextView tv2;
+        private TextView tv3;
+        private Button btnlf;
+        private Button btnrt;
+        private Button btnyes;
+        private Button btnno;
+
+        //构造方法，用于获取当前context背景和列表
+        public CheckAdapter(Context context,String str) {
+            this.context = context;this.str = str;
+        }
+
+        //获取长度
+        public int getCount() {
+            return 1;
+        }//为什么列表中会有多个list_row，就是在这里得知的
+
+        public Object getItem(int position) {
+            return null;
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            layoutInflater = LayoutInflater.from(context);//创建一个布局解析器
+            convertView = layoutInflater.inflate(R.layout.check, null);//将布局转化成View窗口
+            convertView.setAlpha(1);
+            //元件对应匹配
+            tv1 = convertView.findViewById(R.id.textView17);
+            tv2 = convertView.findViewById(R.id.textView18);
+            tv3 = convertView.findViewById(R.id.textView16);
+            btnrt = convertView.findViewById(R.id.button15);
+            btnlf = convertView.findViewById(R.id.button14);
+            btnyes = convertView.findViewById(R.id.button13);
+            btnno = convertView.findViewById(R.id.button12);
+            if(checkmap.containsKey(index)){
+                tv1.setText(checkmap.get(index));
+            }else{
+                tv1.setText("没有更多信息了");
+            }
+            tv1.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    index2=index;
+                    tv1.setBackgroundResource(R.drawable.hongsemiaobian);
+                    tv2.setBackgroundResource(R.drawable.huisemiaobian);
+                    tv3.setBackgroundResource(R.drawable.huisemiaobian);
+                }
+            });
+            if(checkmap.containsKey(index+1)){
+                tv2.setText(checkmap.get(index+1));
+            }else{
+                tv2.setText("没有更多信息了");
+            }
+            tv2.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    index2=index+1;
+                    tv2.setBackgroundResource(R.drawable.hongsemiaobian);
+                    tv1.setBackgroundResource(R.drawable.huisemiaobian);
+                    tv3.setBackgroundResource(R.drawable.huisemiaobian);
+                }
+            });
+            if(checkmap.containsKey(index+2)){
+                tv3.setText(checkmap.get(index+2));
+            }else{
+                tv3.setText("没有更多信息了");
+            }
+            tv3.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    index2=index+2;
+                    tv3.setBackgroundResource(R.drawable.hongsemiaobian);
+                    tv1.setBackgroundResource(R.drawable.huisemiaobian);
+                    tv2.setBackgroundResource(R.drawable.huisemiaobian);
+                }
+            });
+            btnrt.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    index=index+3;
+                }
+            });
+            btnlf.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    if(index-3>0) index=index-3;
+                }
+            });
+            //点击取消按键时，本check框不再显示
+            btnno.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    pop4.dismiss();
+                }
+            });
+            btnyes.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    if(checkmap.containsKey(index2)){
+                        String checknumber;
+                        if(exmsg.split("#")[0].equals("input")) checknumber=input;
+                        else checknumber = output;
+                        text.s=exmsg.split("#")[0]+"#"+namematch+"#"+checknumber+"#"+numbermatch.toString().split("\\.")[0]+"#"+id+"#false#"+checkmap.get(index2).split("\\|")[0];
+                        text.flag=true;
+                    }else{
+                        myHandler.removeMessages(0);
+                        Message message = myHandler.obtainMessage(10086,0,0,"目标仓库不存在");
+                        myHandler.sendMessage(message);
+                    }
+                    pop4.dismiss();
+                }
+            });
+            return convertView;
+        }
+    }
+
 
     //总的网络连接线程，所有网络连接操作在此线程中进行
     class SumConnect extends Thread{
@@ -523,12 +680,13 @@ public class ExchangeActivity extends AppCompatActivity {
 
         public void run(){
             try{
+                map = errorTrans();
                 Text t0 = new Text();//t0是为了判断网络延时而设置的参照物
                 t0.flag = false;//设置t0为false
                 Thread.sleep(1000);
                 System.out.println("启动延时器");
                 new Thread(new DelayTimer(t0)).start();//启动延时器，若1s后连接没有建立，认为发生了网络延时，弹出警告框
-                socket = new Socket(ip,12000);//建立Socket连接
+                socket = new Socket(ip,57798);//建立Socket连接
                 PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));//创建输出流
                 BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));//创建文本输入流
                 DataInputStream dis = new DataInputStream(socket.getInputStream());//创建图片输入流
@@ -547,7 +705,7 @@ public class ExchangeActivity extends AppCompatActivity {
                         if(t.flag2 == true){//flag2是用来标记图片输入的，服务器端返回的信息应当是图片而不是语句时，调用以下代码
                             t.flag2 = false;
                             System.out.println("接收到图片输入："+namematch+".jpg");
-                            Cursor cursortemp = db.rawQuery("select * from team where name = '"+namematch+"'",null);
+                            Cursor cursortemp = db.rawQuery("select * from store where name = '"+namematch+"'",null);
                             while(cursortemp.moveToNext()){
                                 if(cursortemp.getString(5).equals("null")){//如果原本不存在这张图片，则创建该文件
                                     db.execSQL("update store set picture = '" + namematch + ".jpg' where name = '" + namematch + "'");
@@ -575,12 +733,24 @@ public class ExchangeActivity extends AppCompatActivity {
                         }else{//服务器端返回的信息不是图片而是语句时，调用以下代码
                             String str = br.readLine();
                             System.out.println("接收到输入信息："+str);
-                            if(str.contains("&")) new Thread(new PutinStore(str,db)).start();
-                            else if(str.equals("exchange#error")){
+                            if(str.split("#")[0].equals("update")) new Thread(new PutinStore(str,db)).start();
+                            else if(map.containsKey(str)){
                                 myHandler.removeMessages(0);
-                                Message message = myHandler.obtainMessage(10000,0,0,"null");
+                                Message message = myHandler.obtainMessage(10086,0,0,map.get(str));
                                 myHandler.sendMessage(message);
-                            }else if(str.equals("exchange#over")){
+                            }else if(str.split("#")[0].equals("check")){//如果是check型数据，打开check面板
+                                //check预处理
+                                checkmap.clear();
+                                int i=1;//checkmap的数字从1开始
+                                while(!str.split("&")[i].equals("end")){
+                                    checkmap.put(i,str.split("&")[i]);
+                                    i++;
+                                }
+                                index=1;index2=0;
+                                myHandler.removeMessages(0);
+                                Message message = myHandler.obtainMessage(12138,0,0,str);
+                                myHandler.sendMessage(message);
+                            }else if(str.equals("input#success")||str.equals("output#success")){
                                 myHandler.removeMessages(0);
                                 Message message = myHandler.obtainMessage(10001,0,0,"null");
                                 myHandler.sendMessage(message);
@@ -597,6 +767,11 @@ public class ExchangeActivity extends AppCompatActivity {
                                     Message message2 = myHandler.obtainMessage(10004,0,0,"null");
                                     myHandler.sendMessage(message2);
                                 }
+                            }
+                            else{
+                                myHandler.removeMessages(0);
+                                Message message = myHandler.obtainMessage(10086,0,0,"未知消息："+str);
+                                myHandler.sendMessage(message);
                             }
                         }
                     }else{
@@ -647,7 +822,8 @@ public class ExchangeActivity extends AppCompatActivity {
         public void run(){
             int i = 1;
             String temp = this.temp.split("&")[i];
-            while(!temp.equals("updateend")){
+            db.execSQL("create table if not exists store(name String,number double,tag String,note String,location String,picture String,time String)");
+            while(!temp.equals("end")){
                 String name = temp.split("#")[0];
                 boolean matchFlag = false;
                 Cursor cursorTemp = db.rawQuery("select * from store where name = '"+name+"'",null);
@@ -715,12 +891,43 @@ public class ExchangeActivity extends AppCompatActivity {
                     attenntionmsg = "您的权限不够\n不能对库存进行操作";
                     attentionshow(listView);
                     break;
+                case 10086:
+                    attenntionmsg = message.obj.toString();
+                    attentionshow(listView);
+                    break;
+                case 12138:
+                    if(pop4 == null){
+                        pop4 = new PopupWindow(listView0,viewant.getWidth(),2*viewant.getHeight());
+                        pop4.showAsDropDown(viewant);
+                    }
+                    else{
+                        pop4.showAsDropDown(viewant);
+                    }
+                    break;
+                case 1999:
+                    adapter.notifyDataSetChanged();
+                    break;
+                default:
+                    attenntionmsg = "未知错误";
+                    attentionshow(listView);
+                    break;
             }
         }
 
     }
 
-
+    public static HashMap<String,String> errorTrans(){
+        HashMap<String,String> map = new HashMap<String,String>();
+        map.put("input#miss","要进货的目标货物不存在，货物信息可能已被删除");
+        map.put("input#wrong","货物余量校验错误\n请及时更新当前货物信息");
+        map.put("input#error","您的操作权限不够\n请联系管理员\n电话13780094528");
+        map.put("input#over","当前仓库剩余容量不足\n已取消入库操作");
+        map.put("output#miss","要出货的目标货物不存在，货物信息可能已被删除");
+        map.put("output#wrong","货物余量校验错误\n请及时更新当前货物信息");
+        map.put("output#error","宁的操作权限不足\n请联系管理员\n电话18888920671");
+        map.put("output#over","目标仓库中该货物的余量不足\n已取消出库操作");
+        return map;
+    }
 
 }
 

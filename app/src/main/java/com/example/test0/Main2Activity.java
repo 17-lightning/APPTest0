@@ -28,7 +28,7 @@ public class Main2Activity extends AppCompatActivity {
 
 
         Intent intentme = getIntent();
-        System.out.println(intentme.getStringExtra("level"));
+        System.out.println(intentme.getIntExtra("level",0));
         lv = intentme.getIntExtra("level",0);
         id = intentme.getStringExtra("id");
         ip = intentme.getStringExtra("ip");
@@ -58,8 +58,10 @@ public class Main2Activity extends AppCompatActivity {
         btnqy.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(Main2Activity.this,QueryActivity.class);
+                Intent intent = new Intent(Main2Activity.this,ShelfActivity.class);
                 intent.putExtra("level",lv);
+                intent.putExtra("ip",ip);
+                intent.putExtra("id",id);
                 startActivity(intent);
             }
         });
