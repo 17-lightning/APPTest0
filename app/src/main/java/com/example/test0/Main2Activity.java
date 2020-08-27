@@ -70,8 +70,10 @@ public class Main2Activity extends AppCompatActivity {
         btnfp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(Main2Activity.this,TaskArrangeActivity.class);
+                Intent intent = new Intent(Main2Activity.this,SignalActivity.class);
                 intent.putExtra("level",lv);
+                intent.putExtra("ip",ip);
+                intent.putExtra("id",id);
                 startActivity(intent);
             }
         });

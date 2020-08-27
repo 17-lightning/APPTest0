@@ -377,6 +377,7 @@ public class ShelfActivity extends AppCompatActivity {
                         pw.flush();
                         System.out.println("发送数据："+t.s);
                         String str = br.readLine();//接收一行服务器返回的数据
+                        System.out.println("接收到信息："+str);
                         if(str.split("&")[0].equals("update2")){
                             int i = 1;
                             while(!str.split("&")[i].equals("end")) {

@@ -2,14 +2,16 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <TextView
-        android:layout_marginTop="10dp"
+        android:id="@+id/tx1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/tx1"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
         android:text="欢迎使用智能仓储管理员APP测试版，请在下框内输入服务器地址、账号和密码"
-        android:textSize="20dp"
-        android:textColor="#0066FF"/>
+        android:textColor="#0066FF"
+        android:textSize="20dp" />
 
     <TextView
         android:id="@+id/tx2"
@@ -109,5 +111,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/btnlg"
         android:layout_marginTop="10dp"
+        android:alpha="0"
         android:text="测试" />
 </RelativeLayout>
