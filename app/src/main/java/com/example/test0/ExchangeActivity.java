@@ -1,26 +1,19 @@
 package com.example.test0;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PersistableBundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,20 +21,18 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -67,6 +58,8 @@ public class ExchangeActivity extends AppCompatActivity {
     private ImageButton btnpic;
     private Button btnrt;
     private Button buttonupdate;
+    private Button btnsell;
+    private Button btnnum;
 
     //变量
     private String goal;//可输入的货物名称，不保证匹配
@@ -184,6 +177,31 @@ public class ExchangeActivity extends AppCompatActivity {
                 goal = editable.toString();System.out.println("需要查询的货物是:"+goal);
                 ChangeList(list);
 
+            }
+        });
+
+        //销量预测按钮
+        btnsell = findViewById(R.id.buttonxl);
+        btnsell.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ExchangeActivity.this, OtherActivity.class);
+                intent.putExtra("level",lv);
+                intent.putExtra("ip",ip);
+                intent.putExtra("id",id);
+                startActivity(intent);
+            }
+        });
+        //销量统计按钮
+        btnnum = findViewById(R.id.button_num);
+        ((View) btnnum).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ExchangeActivity.this, QueryActivity.class);
+                intent.putExtra("level",lv);
+                intent.putExtra("ip",ip);
+                intent.putExtra("id",id);
+                startActivity(intent);
             }
         });
 

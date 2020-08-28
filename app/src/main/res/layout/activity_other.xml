@@ -1,9 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".OtherActivity">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    android:background="#D8ECF3">
+
+
+    <TextView
+        android:id="@+id/pos_tx1"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_margin="15dp"
+        android:gravity="bottom|right"
+        android:singleLine="true"
+        android:text="货物销量预测"
+        android:textSize="40sp" />
+
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos11"
+            android:layout_marginLeft="10dp"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="      货物编号      "
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos12"
+            android:layout_width="208dp"
+            android:layout_marginLeft="10dp"
+            android:background="@color/design_default_color_secondary"
+            android:layout_span="1"
+            android:gravity="center"
+            android:text="预测结果"
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos21"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="1"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos22"
+            android:layout_width="87dp"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos31"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="2"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos32"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos41"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="3"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos42"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos51"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="4"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos52"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos61"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="5"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos62"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/pos71"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="@color/design_default_color_secondary"
+            android:gravity="center"
+            android:text="6"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/pos72"
+            android:layout_marginLeft="10dp"
+            android:layout_span="1"
+            android:background="#BCDDF0"
+            android:gravity="center"
+            android:text=""
+            android:textSize="30sp" />
+
+    </TableRow>
+
+    <TableRow
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnsell"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_span="1"
+            android:text="进行预测"
+            android:textSize="30sp" />
+    </TableRow>
+
+
+</TableLayout>
+

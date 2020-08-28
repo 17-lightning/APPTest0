@@ -6,4 +6,99 @@
     android:layout_height="match_parent"
     tools:context=".QueryActivity">
 
+    <EditText
+        android:id="@+id/qedtx1"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="9dp"
+        android:layout_marginLeft="9dp"
+        android:layout_marginTop="160dp"
+        android:layout_marginBottom="31dp"
+        app:layout_constraintBottom_toTopOf="@+id/qedtx2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView23"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/qedtx2"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="3dp"
+        android:layout_marginLeft="3dp"
+        android:layout_marginTop="31dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintBottom_toTopOf="@+id/button_query"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/textView24"
+        app:layout_constraintTop_toBottomOf="@+id/qedtx1" />
+
+    <com.github.mikephil.charting.charts.PieChart
+        android:id="@+id/pie_chart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="10dp"
+        android:padding="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button_query"></com.github.mikephil.charting.charts.PieChart>
+
+    <TextView
+        android:id="@+id/textView23"
+        android:layout_width="86dp"
+        android:layout_height="43dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="160dp"
+        android:layout_marginEnd="9dp"
+        android:layout_marginRight="9dp"
+        android:layout_marginBottom="33dp"
+        android:gravity="center"
+        android:text="货物"
+        android:textSize="26sp"
+        app:layout_constraintBottom_toTopOf="@+id/textView24"
+        app:layout_constraintEnd_toStartOf="@+id/qedtx1"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView24"
+        android:layout_width="88dp"
+        android:layout_height="43dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="33dp"
+        android:layout_marginEnd="3dp"
+        android:layout_marginRight="3dp"
+        android:layout_marginBottom="109dp"
+        android:gravity="center"
+        android:text="时间段"
+        android:textSize="26sp"
+        app:layout_constraintBottom_toTopOf="@+id/pie_chart"
+        app:layout_constraintEnd_toStartOf="@+id/qedtx2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView23" />
+
+    <Button
+        android:id="@+id/button_query"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="127dp"
+        android:layout_marginLeft="127dp"
+        android:layout_marginTop="17dp"
+        android:layout_marginEnd="196dp"
+        android:layout_marginRight="196dp"
+        android:layout_marginBottom="27dp"
+        android:text="确认"
+        app:layout_constraintBottom_toTopOf="@+id/pie_chart"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/qedtx2" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
